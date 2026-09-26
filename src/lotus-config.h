@@ -35,10 +35,11 @@ namespace fcitx {
         Preedit,
         Emoji,
         Minecraft,
+        Select,
     };
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(LotusMode, N_("OFF"), N_("Uinput (Smooth)"), N_("Uinput (Super Smooth)"), N_("Uinput (Slow)"), N_("Surrounding Text"), N_("Preedit"),
-                                     N_("Emoji Picker"), N_("Minecraft"));
+                                     N_("Emoji Picker"), N_("Minecraft"), N_("Select (Shift+Left)"));
 
     /**
      * @brief Converts LotusMode to int and vice versa.

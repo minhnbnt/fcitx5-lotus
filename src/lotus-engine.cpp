@@ -52,6 +52,7 @@ namespace fcitx {
             case LotusMode::Preedit: return 5;
             case LotusMode::Emoji: return 6;
             case LotusMode::Minecraft: return 8;
+            case LotusMode::Select: return 9;
             default: return 0;
         }
     }
@@ -66,6 +67,7 @@ namespace fcitx {
             case 5: return LotusMode::Preedit;
             case 6: return LotusMode::Emoji;
             case 8: return LotusMode::Minecraft;
+            case 9: return LotusMode::Select;
             default: return LotusMode::Off;
         }
     }
@@ -913,7 +915,8 @@ namespace fcitx {
             return;
 
         file << "# Lotus Per-App Configuration\n";
-        file << "# 0 = Off, 1 = Uinput (Smooth), 2 = Uinput (Slow), 3 = Uinput (Super Smooth), 4 = Surrounding Text, 5 = Preedit, 6 = Emoji Picker, 8 = Minecraft\n";
+        file << "# 0 = Off, 1 = Uinput (Smooth), 2 = Uinput (Slow), 3 = Uinput (Super Smooth), 4 = Surrounding Text, 5 = Preedit, 6 = Emoji Picker, 8 = Minecraft, 9 = Select "
+                "(Shift+Left)\n";
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         for (const auto& pair : appRules_) {
             bool currentIsCtx = isStartsWith(pair.first, "ctx_");
@@ -1138,6 +1141,7 @@ namespace fcitx {
             case LotusMode::Emoji: modeLabel = _("Emoji Picker"); break;
             case LotusMode::Off: modeLabel = _("OFF"); break;
             case LotusMode::SuperSmooth: modeLabel = _("Uinput (Super Smooth)"); break;
+            case LotusMode::Select: modeLabel = _("Select (Shift+Left)"); break;
             default: modeLabel = _("Unknown Mode"); break;
         }
 

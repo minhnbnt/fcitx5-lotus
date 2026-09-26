@@ -255,6 +255,8 @@ namespace fcitx {
         Option<std::string> shortcutSuperSmooth{this, "ShortcutSuperSmooth", _("Shortcut for Uinput (Super Smooth)"), "a"};
         Option<bool>        showModeMinecraft{this, "ShowModeMinecraft", _("Show Minecraft"), true};
         Option<std::string> shortcutMinecraft{this, "ShortcutMinecraft", _("Shortcut for Minecraft"), "3"};
+        Option<bool>        showModeSelect{this, "ShowModeSelect", _("Show Select (Shift+Left)"), true};
+        Option<std::string> shortcutSelect{this, "ShortcutSelect", _("Shortcut for Select (Shift+Left)"), "5"};
         Option<bool>        showModeSurroundingText{this, "ShowModeSurroundingText", _("Show Surrounding Text"), true};
         Option<std::string> shortcutSurroundingText{this, "ShortcutSurroundingText", _("Shortcut for Surrounding Text"), "4"};
         Option<bool>        showModePreedit{this, "ShowModePreedit", _("Show Preedit"), true};
@@ -267,7 +269,7 @@ namespace fcitx {
 
         Option<bool>        useSurroundingTextIfPossible{this, "useSurroundingTextIfPossible", _("Use Surrounding Text if possible"), false};
 
-        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Smooth,Uinput,Minecraft,SurroundingText,Preedit,Emoji,Off,SuperSmooth,Default"};
+        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Smooth,Uinput,Minecraft,Select,SurroundingText,Preedit,Emoji,Off,SuperSmooth,Default"};
 
         OptionWithAnnotation<std::string, TimeFormatAnnotation>  timeFormat{this, "TimeFormat", _("Time Format ($TIME in macro)"), "%H:%M", {}, {}, TimeFormatAnnotation()};
         OptionWithAnnotation<std::string, DateFormatAnnotation>  dateFormat{this, "DateFormat", _("Date Format ($DATE in macro)"), "%d/%m/%Y", {}, {}, DateFormatAnnotation()};

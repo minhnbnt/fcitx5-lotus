@@ -56,9 +56,14 @@ bool UinputDevice::initialize() {
         return false;
     guard_.reset(fd);
 
-    if (ioctl(fd, UI_SET_EVBIT, EV_KEY) < 0 || ioctl(fd, UI_SET_KEYBIT, KEY_BACKSPACE) < 0 || ioctl(fd, UI_SET_KEYBIT, KEY_LEFT) < 0 ||
-        ioctl(fd, UI_SET_KEYBIT, KEY_LEFTSHIFT) < 0) {
+    if (ioctl(fd, UI_SET_EVBIT, EV_KEY) < 0) {
         return false;
+    }
+
+    for (int key : {KEY_BACKSPACE, KEY_LEFT, KEY_LEFTSHIFT}) {
+        if (ioctl(fd, UI_SET_KEYBIT, key) < 0) {
+            return false;
+        }
     }
 
     struct uinput_setup usetup{};

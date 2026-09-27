@@ -19,6 +19,8 @@
 #include <sched.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <chrono>
+#include <thread>
 
 std::atomic<bool> g_running{true};
 
@@ -206,6 +208,7 @@ const struct libinput_interface interface = {
 };
 
 int main(int argc, char* argv[]) {
+    using namespace std::chrono_literals;
     std::string target_user;
     if (argc == 3 && strcmp(argv[1], "-u") == 0) { // NOLINT
         target_user = argv[2];                     // NOLINT
@@ -322,6 +325,7 @@ int main(int argc, char* argv[]) {
                 uinput.send_shift_left();
                 --pending_selects;
                 if (pending_selects == 0 && shift_held) {
+                    std::this_thread::sleep_for(10ms);
                     uinput.send_shift_up();
                     shift_held = false;
                 }
@@ -396,13 +400,22 @@ int main(int argc, char* argv[]) {
                     if (!shift_held) {
                         uinput.send_shift_down();
                         shift_held = true;
+                        // Delay 1: 2ms between Shift Down and first Left arrow to allow the OS/compositor to flush the Shift modifier
+                        std::this_thread::sleep_for(2ms);
                     }
-                    uinput.send_shift_left();
-                    pending_selects += msg.count - 1;
-                    if (pending_selects == 0 && shift_held) {
-                        uinput.send_shift_up();
-                        shift_held = false;
+                    for (int i = 0; i < msg.count && g_running.load(std::memory_order_relaxed); ++i) {
+                        uinput.send_shift_left();
+                        if (i + 1 < msg.count) {
+                            // Delay 2: 2ms pacing interval between consecutive Left arrows
+                            std::this_thread::sleep_for(2ms);
+                        }
                     }
+                    // Delay 3: 10ms wait after the last Left arrow before releasing Shift,
+                    // ensuring the application processes Left while Shift is still held down
+                    std::this_thread::sleep_for(10ms);
+                    uinput.send_shift_up();
+                    shift_held      = false;
+                    pending_selects = 0;
                 } else if (msg.count > 0 && msg.op == KB_OP_BACKSPACE) {
                     if (shift_held) {
                         // A stale in-flight selection must not mix with backspaces.

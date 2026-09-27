@@ -28,8 +28,9 @@ namespace {
         return true;
     }
 
-    bool send(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool requireAccepted) {
-        fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
+    bool send(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool requireAccepted,
+              fcitx::KeyStates states = fcitx::KeyStates()) {
+        fcitx::KeyEvent event(&context, fcitx::Key(symbol, states), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != requireAccepted) {
             reportFailure("process key " + std::to_string(symbol), "accepted=" + std::to_string(requireAccepted),
@@ -90,7 +91,7 @@ int main() {
     // Echoed left arrows: every press but the last passes through so the app can
     // extend the selection; the last one is swallowed and commits the replacement.
     for (int i = 0; i < selects; ++i) {
-        if (!send(engine, entry, *context, FcitxKey_Left, i + 1 == selects))
+        if (!send(engine, entry, *context, FcitxKey_Left, i + 1 == selects, fcitx::KeyState::Shift))
             return 1;
     }
     const std::vector<std::string> afterFirst{"á"};
@@ -108,7 +109,7 @@ int main() {
                               "buffered x replay starts another selection request within 5000 ms"))
         return 1;
     for (int i = 0; i < replaySelects; ++i) {
-        if (!send(engine, entry, *context, FcitxKey_Left, i + 1 == replaySelects))
+        if (!send(engine, entry, *context, FcitxKey_Left, i + 1 == replaySelects, fcitx::KeyState::Shift))
             return 1;
     }
 

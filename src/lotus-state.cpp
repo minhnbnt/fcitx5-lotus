@@ -448,25 +448,47 @@ namespace fcitx {
     }
 
     void LotusState::finishReplacement(KeyEvent& event, int sleepTime) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime * (expected_backspaces_ - 1)));
-        // Validate surr cursor pos should match realtextLen after all BS/Left applied
-        const auto& surr = ic_->surroundingText();
-        if (surr.isValid() && surr.cursor() == realtextLen.load(std::memory_order_acquire)) {
-            LOTUS_INFO("Skip retry");
+        using namespace std::chrono_literals;
+        if (realMode == LotusMode::Select) {
+            // Wait fixed 20ms after selection/release before committing
+            std::this_thread::sleep_for(20ms);
         } else {
-            // Retry x3 (2 ms each), khi can (chromium,electron,...)
-            for (int retry = 0; retry < 3; ++retry) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(2));
-                const auto& surr2 = ic_->surroundingText();
-                if (surr2.isValid() && surr2.cursor() == realtextLen.load(std::memory_order_acquire)) {
-                    break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime * (expected_backspaces_ - 1)));
+            // Validate surr cursor pos should match realtextLen after all BS/Left applied
+            const auto& surr = ic_->surroundingText();
+            if (surr.isValid() && surr.cursor() == realtextLen.load(std::memory_order_acquire)) {
+                LOTUS_INFO("Skip retry");
+            } else {
+                // Retry x3 (2 ms each), khi can (chromium,electron,...)
+                for (int retry = 0; retry < 3; ++retry) {
+                    std::this_thread::sleep_for(2ms);
+                    const auto& surr2 = ic_->surroundingText();
+                    if (surr2.isValid() && surr2.cursor() == realtextLen.load(std::memory_order_acquire)) {
+                        break;
+                    }
                 }
             }
         }
         const bool  dbusDefer  = getFrontendName(ic_) == "dbus";
         std::string commitText = std::move(pending_commit_string_);
         pending_commit_string_.clear();
-        if (dbusDefer) {
+        if (realMode == LotusMode::Select && !commitText.empty()) {
+            // 2-step commit for rich text: commit first character to replace selection, then rest
+            auto        it        = commitText.begin();
+            uint32_t    codepoint = 0;
+            auto        nextIt    = fcitx::utf8::getNextChar(it, commitText.end(), &codepoint);
+            std::string firstChar(it, nextIt);
+            std::string remainingText(nextIt, commitText.end());
+
+            ic_->commitString(firstChar);
+            LOTUS_INFO("Commit (Select 2-step first): " + firstChar);
+
+            if (!remainingText.empty()) {
+                std::this_thread::sleep_for(5ms);
+                ic_->commitString(remainingText);
+                LOTUS_INFO("Commit (Select 2-step remaining): " + remainingText);
+            }
+        } else if (dbusDefer) {
             auto icRef            = ic_->watch();
             auto onDeferredCommit = [this, icRef, commitText = std::move(commitText)](auto*, auto) {
                 deferredCommitTimer_.reset();
@@ -1108,6 +1130,13 @@ namespace fcitx {
                     return;
                 }
             } else if (realMode == LotusMode::Select && currentSym == FcitxKey_Left) {
+                // Ensure Shift is still held down when receiving echoed Left arrow; if not, swallow it to prevent cursor displacement
+                const bool hasShift = ((keyEvent.rawKey().states() & KeyState::Shift) != 0U);
+                if (!hasShift) {
+                    LOTUS_WARN("Left arrow received without Shift in Select mode, skip left command");
+                    keyEvent.filterAndAccept();
+                    return;
+                }
                 // Echoed left arrow extends the selection in the app: consume it as
                 // a selection signal, never buffer it for replay.
                 if (realtextLen.load(std::memory_order_acquire) > 0)

@@ -1175,13 +1175,14 @@ namespace fcitx {
         auto  now_time     = ::fcitx::now(CLOCK_MONOTONIC);
         auto  timeout_time = now_time + CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC;
 
-        cycleModeNotificationTimer_ = eventLoop.addTimeEvent(CLOCK_MONOTONIC, timeout_time, 0, [icRef = ic->watch()](EventSourceTime*, uint64_t) {
+        auto  onCycleModeTimeout = [icRef = ic->watch()](auto*, auto) {
             if (auto* ic = icRef.get(); ic && ic->hasFocus()) {
                 ic->inputPanel().reset();
                 ic->updateUserInterface(UserInterfaceComponent::InputPanel);
             }
             return false;
-        });
+        };
+        cycleModeNotificationTimer_ = eventLoop.addTimeEvent(CLOCK_MONOTONIC, timeout_time, 0, onCycleModeTimeout);
     }
 
     void LotusEngine::setMode(LotusMode mode, InputContext* ic) {

@@ -467,17 +467,17 @@ namespace fcitx {
         std::string commitText = std::move(pending_commit_string_);
         pending_commit_string_.clear();
         if (dbusDefer) {
-            auto icRef           = ic_->watch();
-            deferredCommitTimer_ = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, now(CLOCK_MONOTONIC), 0,
-                                                                                 [this, icRef, commitText = std::move(commitText)](EventSourceTime*, uint64_t) {
-                                                                                     deferredCommitTimer_.reset();
-                                                                                     if (auto* ic = icRef.get()) {
-                                                                                         ic->commitString(commitText);
-                                                                                         LOTUS_INFO("Commit (deferred): " + commitText);
-                                                                                     }
-                                                                                     replayBufferedKeys();
-                                                                                     return true;
-                                                                                 });
+            auto icRef            = ic_->watch();
+            auto onDeferredCommit = [this, icRef, commitText = std::move(commitText)](auto*, auto) {
+                deferredCommitTimer_.reset();
+                if (auto* ic = icRef.get()) {
+                    ic->commitString(commitText);
+                    LOTUS_INFO("Commit (deferred): " + commitText);
+                }
+                replayBufferedKeys();
+                return true;
+            };
+            deferredCommitTimer_ = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, now(CLOCK_MONOTONIC), 0, onDeferredCommit);
         } else {
             ic_->commitString(commitText);
             LOTUS_INFO("Commit: " + commitText);

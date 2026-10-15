@@ -29,10 +29,7 @@
 #include <mutex>
 #include <string>
 
-struct ei;
-struct ei_device;
-struct ei_event;
-struct ei_seat;
+#include <libei.h>
 
 namespace fcitx {
 
